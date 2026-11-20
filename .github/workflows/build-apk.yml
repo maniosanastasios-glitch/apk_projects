@@ -29,8 +29,8 @@ jobs:
 
       - name: Install Buildozer and Cython
         run: |
-          pip install --upgrade pip setuptools wheel
-          pip install buildozer cython==0.29.36
+          python -m pip install --upgrade "pip<25" setuptools wheel
+          python -m pip install buildozer cython==0.29.36
 
       - name: Cache Buildozer build artifacts
         uses: actions/cache@v4
@@ -38,10 +38,12 @@ jobs:
           path: |
             ~/.buildozer
             repo-root/.buildozer
-          key: buildozer-${{ runner.os }}-${{ hashFiles('repo-root/buildozer.spec') }}
+          key: buildozer-v2-${{ runner.os }}-${{ hashFiles('repo-root/buildozer.spec') }}
 
       - name: Build Android debug APK
-        run: buildozer android debug
+        run: |
+          python -m pip install --upgrade "pip<25"
+          buildozer android debug
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
