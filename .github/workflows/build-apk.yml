@@ -32,36 +32,22 @@ jobs:
           python -m pip install --upgrade "pip==24.3.1" "setuptools<75" wheel
           python -m pip install buildozer cython==0.29.36
 
-      - name: Cache Buildozer build artifacts
+      - name: Cache Buildozer downloads (SDK/NDK only, not venvs)
         uses: actions/cache@v4
         with:
           path: |
-            ~/.buildozer
-            repo-root/.buildozer
-          key: buildozer-v6-pip2431-${{ runner.os }}-${{ hashFiles('repo-root/buildozer.spec') }}
+            ~/.buildozer/android/platform
+          key: buildozer-v7-${{ runner.os }}-${{ hashFiles('repo-root/buildozer.spec') }}
 
-      - name: Repair pip inside any existing p4a venvs
+      - name: Remove any stale p4a venvs
         run: |
-          python -m pip install --upgrade "pip==24.3.1" "setuptools<75" wheel
-          for py in .buildozer/**/venv/bin/python "$HOME/.buildozer"/**/venv/bin/python; do
-            if [ -x "$py" ]; then
-              echo "Repairing pip in $py"
-              "$py" -m pip install --force-reinstall "pip==24.3.1" "setuptools<75" wheel || true
-            fi
-          done
+          rm -rf .buildozer/android/platform/build-*/ \
+                 .buildozer/android/platform/python-for-android/venv \
+                 "$HOME/.buildozer/android/platform/python-for-android/venv" || true
+          find .buildozer "$HOME/.buildozer" -type d -name venv -prune -exec rm -rf {} + 2>/dev/null || true
 
       - name: Build Android debug APK
-        run: |
-          buildozer android debug || {
-            echo "p4a venv hit pip error; reinstalling pip==24.3.1 inside venvs and retrying..."
-            for py in .buildozer/**/venv/bin/python "$HOME/.buildozer"/**/venv/bin/python; do
-              if [ -x "$py" ]; then
-                echo "Repairing pip in $py"
-                "$py" -m pip install --force-reinstall "pip==24.3.1" "setuptools<75" wheel || true
-              fi
-            done
-            buildozer android debug
-          }
+        run: buildozer -v android debug
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
